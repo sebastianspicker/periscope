@@ -6,6 +6,7 @@ pipeline loop focuses on inference and rendering.
 
 from __future__ import annotations
 
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -145,38 +146,64 @@ class CaptureManager:
         return True, frame, ""
 
     def _handle_read_failure(self, frame_index: int) -> tuple[bool, None, str]:
-        """Handle a failed frame read with reconnection logic."""
+        """Handle a failed frame read with reconnection logic.
+
+        Reconnect attempts back off (1, 2, 4 s) so a card renegotiating its
+        signal — or a transient USB fault — cannot turn into a hot loop.
+        """
         if not hasattr(self, "_failures"):
             self._failures = 0
-        self._failures = getattr(self, "_failures", 0) + 1
+        self._failures += 1
+        attempt = getattr(self, "_reconnect_attempted", 0)
 
-        print(
-            f"[live] capture read failed "
-            f"({self._failures}/{self._max_failures} consecutive failures)"
-        )
         if self._failures < self._max_failures:
             return False, None, ""
 
-        if isinstance(self._config, ScreenCapturer):
-            return False, None, "capture_failure"
+        if not isinstance(self._config, ScreenCapturer) and attempt < 3:
+            backoff = 2.0**attempt  # 1, 2, 4 seconds
+            print(
+                f"[live] capture read failed "
+                f"({self._failures} consecutive); reconnecting in {backoff:.0f}s"
+            )
+            time.sleep(backoff)
+            try:
+                if self._cap is not None:
+                    self._cap.release()
+                self._cap = open_capture(self._config)
+                if not self._cap.isOpened():
+                    raise CaptureError("Capture device did not open after reconnect.")
+            except Exception as error:
+                print(f"[live] capture reconnect failed: {error}")
+                self._reconnect_attempted = attempt + 1
+                self._failures = 0
+                return False, None, ""
+            self._reconnect_attempted = 0
+            self._failures = 0
+            self._drain_stale_frames()
+            print("[live] capture reconnect succeeded")
+            return False, None, ""
 
-        if getattr(self, "_reconnect_attempted", False):
-            return False, None, "capture_failure"
+        return False, None, "capture_failure"
 
-        self._reconnect_attempted = True
-        print("[live] attempting capture reconnect")
-        self._cap.release()
-        try:
-            self._cap = open_capture(self._config)
-            if not self._cap.isOpened():
-                raise CaptureError("Capture device did not open after reconnect.")
-        except Exception as error:
-            print(f"[live] capture reconnect failed: {error}")
-            return False, None, "capture_failure"
+    def _drain_stale_frames(self, max_drain: int = 10) -> None:
+        """Read past stale buffers queued while the device was away.
 
-        self._failures = 0
-        print("[live] capture reconnect succeeded")
-        return False, None, ""
+        Capture drivers buffer internally; reconnecting without draining would
+        present a frame from before the outage. Best-effort, bounded.
+        """
+        if self._cap is None:
+            return
+        drained = 0
+        while drained < max_drain:
+            try:
+                ok, _frame = self._cap.read()
+            except Exception:
+                break
+            if not ok:
+                break
+            drained += 1
+        if drained:
+            print(f"[live] drained {drained} buffered frame(s) after reconnect")
 
     def _validate_frame(self, frame: np.ndarray | None) -> str:
         """Validate a decoded frame. Returns empty string on success."""

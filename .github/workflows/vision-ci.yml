@@ -48,10 +48,14 @@ jobs:
         run: python ../scripts/check_architecture.py
 
       - name: Lint with ruff
-        run: uv run ruff check src/
+        run: uv run ruff check src/ tests/
 
       - name: Format check
-        run: uv run ruff format --check src/
+        run: uv run ruff format --check src/ tests/
+
+      - name: Unit tests
+        if: matrix.python-version == '3.12'
+        run: uv run pytest tests/ -q
 
   typecheck:
     name: Typecheck (Python ${{ matrix.python-version }})

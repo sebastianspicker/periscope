@@ -26,6 +26,7 @@ from cs2_vision_access.application.live.inference.temporal import (
 class _FrameResult:
     termination_reason: str | None = None
     frames_inferred_delta: int = 0
+    frames_dropped: int = 0
     instances_predicted_delta: int = 0
     instances_outlined_delta: int = 0
     temporal_suppressed_delta: int = 0
@@ -85,6 +86,16 @@ def run_frame(
     elapsed_since_start = time.perf_counter() - started
     expected_frames = int(elapsed_since_start * capture_fps)
     frames_behind = expected_frames - frame_index
+
+    # Fixed pacing (`max_capture_age_ms` on the config) bounds the queue: drop
+    # the frame when it is already older than the consumer-relevant window.
+    max_age = getattr(cfg, "max_capture_age_ms", 0.0)
+    if max_age > 0 and frames_behind > 0:
+        stale_ms = frames_behind * 1000.0 / max(capture_fps, 1.0)
+        if stale_ms > max_age:
+            capture_mgr.read(frame_index)  # advance past the stale buffer
+            result.frames_dropped = 1
+            return result
 
     if frames_behind > cfg.frame_skip_threshold:
         return result

@@ -39,9 +39,10 @@ def verify_radar() -> None:
 def verify_vision() -> None:
     vision = ROOT / "vision"
     run("uv", "sync", "--frozen", "--extra", "dev", cwd=vision)
-    run("uv", "run", "ruff", "check", "src/", cwd=vision)
-    run("uv", "run", "ruff", "format", "--check", "src/", cwd=vision)
+    run("uv", "run", "ruff", "check", "src/", "tests/", cwd=vision)
+    run("uv", "run", "ruff", "format", "--check", "src/", "tests/", cwd=vision)
     run("uv", "run", "mypy", "--strict", "src/cs2_vision_access/", cwd=vision)
+    run("uv", "run", "pytest", "tests/", "-q", cwd=vision)
     run("uv", "build", cwd=vision)
 
 

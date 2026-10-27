@@ -50,6 +50,10 @@ class CaptureConfig:
     ``preferred_width`` / ``preferred_height``: target capture resolution (best-effort).
     ``preferred_fps``: target frame rate (best-effort).
     ``backend``: OpenCV ``cv2.CAP_*`` hint (``auto``, ``dshow``, ``avfoundation``).
+    ``fourcc``: optional codec negotiation (e.g. ``"MJPG"``, ``"YUY2"``) applied
+      best-effort after opening. Capture cards advertise MJPG at high frame
+      rates over USB3; uncompressed YUY2 avoids a compression stage at the cost
+      of cable bandwidth.
     """
 
     source: int | str = 0
@@ -58,6 +62,7 @@ class CaptureConfig:
     preferred_fps: float = 60.0
     backend: str = "auto"
     buffer_size: int = 1  # cv2.CAP_PROP_BUFFERSIZE hint
+    fourcc: str | None = None
 
 
 def _require_cv2() -> Any:
@@ -208,7 +213,7 @@ def open_capture(
 
 
 def _configure_capture(cap: Any, config: CaptureConfig) -> None:
-    """Apply resolution, FPS, and buffer size hints to a VideoCapture."""
+    """Apply resolution, FPS, codec, and buffer size hints to a VideoCapture."""
     if cv2 is None:
         return
 
@@ -224,6 +229,13 @@ def _configure_capture(cap: Any, config: CaptureConfig) -> None:
     # Set FPS (best-effort)
     if config.preferred_fps > 0:
         cap.set(cv2.CAP_PROP_FPS, config.preferred_fps)
+
+    # Codec negotiation (best-effort). MJPG matters on USB3 capture sticks:
+    # uncompressed 1080p60 often will not enumerate at all without it.
+    if config.fourcc:
+        with contextlib.suppress(Exception):
+            fourcc = cv2.VideoWriter_fourcc(*config.fourcc.upper())
+            cap.set(cv2.CAP_PROP_FOURCC, fourcc)
 
 
 @dataclass

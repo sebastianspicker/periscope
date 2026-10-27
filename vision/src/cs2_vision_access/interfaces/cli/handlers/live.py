@@ -24,6 +24,14 @@ Usage::
         --output-mode green \\
         --headless
 
+    # Second-device contour composite: shared-memory ring to the presenter
+    cs2-vision live --input-device 0 \\
+        --model artifacts/yolo26n-seg.onnx \\
+        --manifest artifacts/yolo26n-seg.model.json \\
+        --output-mode overlay \\
+        --output-stream shm:contours \\
+        --max-capture-age-ms 40
+
     # List available capture devices
     cs2-vision live --list-devices
 """
@@ -52,6 +60,8 @@ from cs2_vision_access.adapters.capture.live_pipeline import (
     LiveRunSummary,
     run_live_pipeline,
 )
+from cs2_vision_access.adapters.capture.outputs import OutputSink
+from cs2_vision_access.adapters.capture.sinks.shared import SharedFrameSink
 from cs2_vision_access.adapters.models.segmenters import (
     DEFAULT_SEGMENTER_BACKEND,
     SUPPORTED_SEGMENTER_BACKENDS,
@@ -220,6 +230,32 @@ def register_live_commands(subcommands: Subcommands) -> None:
         choices=["auto", "dshow", "avfoundation", "v4l2", "msmf"],
         help="OpenCV capture backend hint (default: auto)",
     )
+    live.add_argument(
+        "--fourcc",
+        default=None,
+        help=(
+            "Capture codec negotiation (best-effort): MJPG or YUY2. "
+            "USB3 capture sticks often require MJPG at high frame rates."
+        ),
+    )
+    live.add_argument(
+        "--output-stream",
+        default=None,
+        metavar="NAME",
+        help=(
+            "Publish rendered frames to a named shared-memory ring for a "
+            "second process (external compositor or presenter)."
+        ),
+    )
+    live.add_argument(
+        "--max-capture-age-ms",
+        type=float,
+        default=None,
+        help=(
+            "Drop capture frames older than this (milliseconds of capture "
+            "time) instead of presenting them late. 0 disables the check."
+        ),
+    )
 
     # Manually add inference arguments (avoiding _add_inference_arguments which adds --input)
     live.add_argument("--model", type=Path)
@@ -306,6 +342,7 @@ def _resolve_capture_source(
         preferred_height=height,
         preferred_fps=fps,
         backend=backend,
+        fourcc=arguments.fourcc,
     )
 
 
@@ -548,6 +585,28 @@ def _handle_live(arguments: argparse.Namespace) -> int:
         print("[live] --overlay requires alpha output; switching to --output-mode alpha")
         alpha_mode = "alpha"
 
+    # --- Output sinks ---
+    # File sink (direct write) and shared-memory ring (cross-process) are
+    # independent: a device-2 compositor consumes the ring while the local
+    # preview still shows the composite.
+    output_sink: OutputSink | None = (
+        FileOutputSink(
+            str(arguments.output_sink or display_config.output_sink),
+            fps=fps,
+        )
+        if arguments.output_sink is not None or display_config.output_sink is not None
+        else None
+    )
+    stream_name = arguments.output_stream
+    if stream_name is not None:
+        if not stream_name.startswith("shm:"):
+            raise ValueError(f"unsupported --output-stream {stream_name!r}; expected shm:<name>")
+        output_sink = SharedFrameSink(
+            stream_name[4:],
+            width,
+            height,
+        )
+
     # --- Build pipeline config ---
     pipeline_config = LivePipelineConfig(
         capture=capture,
@@ -564,15 +623,11 @@ def _handle_live(arguments: argparse.Namespace) -> int:
             hold_last_mask=temporal_hold,
             max_dropout_frames=temporal_max_dropout,
         ),
-        output_sink=(
-            FileOutputSink(
-                str(arguments.output_sink or display_config.output_sink),
-                fps=fps,
-            )
-            if arguments.output_sink is not None or display_config.output_sink is not None
-            else None
-        ),
+        output_sink=output_sink,
         overlay_window=overlay_window,
+        max_capture_age_ms=(
+            arguments.max_capture_age_ms if arguments.max_capture_age_ms is not None else 0.0
+        ),
     )
 
     # --- Style ---

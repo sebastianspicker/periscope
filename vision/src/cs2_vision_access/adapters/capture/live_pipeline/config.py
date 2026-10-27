@@ -36,6 +36,10 @@ class LivePipelineConfig:
     overlay_window: OverlayWindow | None = None
     control_state: LiveControlState | None = None
     terminate_event: threading.Event | None = None
+    # Bound the pipeline's own queue: frames older than this (ms of capture
+    # time) are dropped before inference rather than being presented late.
+    # 0 disables the age check (the frame_skip_threshold logic still applies).
+    max_capture_age_ms: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -54,3 +58,4 @@ class LiveRunSummary:
     capture_fps: float
     throughput_fps: float
     termination_reason: str
+    capture_age_dropped: int = 0

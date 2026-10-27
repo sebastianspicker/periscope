@@ -95,6 +95,7 @@ def run_live_pipeline(
 
     frame_index = 0
     frames_inferred_total = 0
+    capture_age_dropped = 0
     instances_predicted_total = 0
     instances_outlined_total = 0
     temporal_suppressed_total = 0
@@ -156,6 +157,7 @@ def run_live_pipeline(
             if result.renderer is not None:
                 renderer = result.renderer
             temporal_policy = result.temporal_policy
+            capture_age_dropped += result.frames_dropped
             frames_inferred_total += result.frames_inferred_delta
             instances_predicted_total += result.instances_predicted_delta
             instances_outlined_total += result.instances_outlined_delta
@@ -191,4 +193,5 @@ def run_live_pipeline(
         capture_fps=capture_fps,
         throughput_fps=throughput_fps,
         termination_reason=termination_reason,
+        capture_age_dropped=capture_age_dropped,
     )
