@@ -89,6 +89,8 @@ uv run cs2-vision live \
 
 When none are given, the overlay auto-aligns to the captured screen region or selected monitor.
 
+Second-device composite (HDMI into another machine, contour fullscreen there): [CONTOUR_PIPELINE.md](CONTOUR_PIPELINE.md). Flags: `--output-stream shm:<name>` (shared-memory ring sink), `--fourcc MJPG` (capture codec), `--max-capture-age-ms N` (latency bound).
+
 `--segmenter-backend` defaults to `ultralytics-onnx`. Other backends: `ultralytics-detect`, `rfdetr`, `cs2-sam`, `yolov10`, `nanodet`. Temporal: `--temporal-enabled` (suppress-only); optional `--temporal-hold` / `--temporal-max-dropout`.
 
 ## gui

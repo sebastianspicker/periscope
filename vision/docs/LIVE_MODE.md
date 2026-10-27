@@ -4,6 +4,8 @@ Command: `cs2-vision live`.
 
 Captures frames from screen, a capture device, or a file, runs a segmenter, and draws outlines. Optional transparent overlay (Win32 layered window on Windows, Cocoa when available on macOS, tkinter fallback).
 
+Second-device composite (HDMI capture card on another machine, contours shown fullscreen): [CONTOUR_PIPELINE.md](CONTOUR_PIPELINE.md).
+
 Desktop alternative: `cs2-vision gui` — same engine, tkinter dashboard. See [CLI.md](CLI.md).
 
 ## Prerequisites
@@ -51,6 +53,9 @@ uv run cs2-vision live --config cs2-vision-config.json
 | `--monitor` | 1-based monitor index for screen capture |
 | `--input-device` | Device index, name substring, or file path |
 | `--output-mode` | `overlay`, `alpha`, or `green` |
+| `--output-stream` | Publish rendered frames to a shared-memory ring (`shm:<name>`) for a second process |
+| `--max-capture-age-ms` | Drop capture frames older than this many ms of capture time (0 = off) |
+| `--fourcc` | Capture codec hint (`MJPG`, `YUY2`) for capture cards |
 | `--overlay` | Transparent always-on-top overlay window |
 | `--overlay-x` / `--overlay-y` | Overlay window top-left (pixels) |
 | `--overlay-monitor` | Overlay monitor index (`0` = auto) |
@@ -116,4 +121,5 @@ Tkinter dashboard with Capture / Model / Style / Overlay-Output / Run tabs. Runs
 
 - Frame skipping kicks in when inference is slower than capture so the UI stays interactive.
 - Alpha and green modes are for external compositors (e.g. OBS), not for writing into the game process.
+- Second-device composite (capture card + fullscreen presenter on another Windows box): [CONTOUR_PIPELINE.md](CONTOUR_PIPELINE.md).
 - Prefer a CS2-trained `player` model for product experiments; COCO `person` is a wiring check only.

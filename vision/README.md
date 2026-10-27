@@ -298,6 +298,7 @@ Topic docs:
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Package map |
 | [docs/CLI.md](docs/CLI.md) | Command reference |
 | [docs/LIVE_MODE.md](docs/LIVE_MODE.md) | Live capture and overlay |
+| [docs/CONTOUR_PIPELINE.md](docs/CONTOUR_PIPELINE.md) | Second-device contour composite |
 | [docs/TRAIN_AUTO.md](docs/TRAIN_AUTO.md) | Multi-stage auto-train |
 | [docs/DATASET.md](docs/DATASET.md) | Dataset policy and layout |
 | [docs/EVALUATION.md](docs/EVALUATION.md) | Metrics and eval CLIs |
