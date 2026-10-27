@@ -76,6 +76,8 @@ Keys: `INSERT` toggles the control panel, `END`/`ESC` quits. Settings persist to
 
 `live_radar` embeds the same control panel. Press `INSERT` to open it while the radar overlay is running. Settings apply live and persist on exit.
 
+Keys while the radar runs: `END` quit, `F` filter, `R` refresh layout, `D` debug ring, `I` cycle intel policy (auto → pinned hud-echo → pinned full), `B` blue score. `--full` starts pinned to all-entity intel, `--strict-intel` starts pinned to hud-echo. See [STEALTH-POSTURE.md](STEALTH-POSTURE.md).
+
 | Tab | Settings |
 |-----|----------|
 | Radar | filter, radar scale, draw background/border/crosshair, enemy arrows, health rings, colors |

@@ -44,7 +44,8 @@ struct Cs2PlayerEntity {
   bool is_alive = false;
   bool is_local_player = false;
   bool dormant = false;
-  bool spotted = true;   ///< m_bSpotted (default true if unreadable)
+  bool spotted = true;   ///< m_bSpotted value (fail-open default)
+  bool spotted_known = false;  ///< false when the spotted read failed
   bool is_bomb = false;  ///< planted C4 pseudo-entity
   bool is_hostage = false;
   bool is_spectator = false;  ///< observer mode != none

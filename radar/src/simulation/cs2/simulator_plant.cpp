@@ -228,7 +228,10 @@ SimCs2Arena make_cs2_arena(int player_count, const char* map_name) {
     player.origin = preset.spawns[i];
     player.old_origin = preset.spawns[i];
     player.eye_angles = {0.0f, static_cast<float>(i * 20), 0.0f};
-    player.spotted_mask = static_cast<uint64_t>(i == 0 ? 0 : 1);
+    // Spotting mask is written after the loop once the local pawn index is
+    // known (player 0 is local): bit N set means spotted by pawn N, so the
+    // HudEcho renderer sees exactly what the official radar would show.
+    player.spotted_mask = 0;
     player.is_local = (i == 0);
     player.desired_fov = 90;
     player.name = "player" + std::to_string(i + 1);
@@ -239,6 +242,17 @@ SimCs2Arena make_cs2_arena(int player_count, const char* map_name) {
 
   if (!players.empty()) {
     arena.local_player_id = players.front().pawn_index;
+    // Team spotting residual: bit N set means "spotted by pawn N". Local player
+    // 0 is CT, so teammates and the first two Ts are visible to the local team,
+    // while the remaining Ts stay unspotted (HudEcho hides them like the
+    // official radar does).
+    const uint64_t local_bit = 1ULL << (players.front().pawn_index & 63);
+    for (std::size_t i = 0; i < players.size(); ++i) {
+      if (players[i].is_local) continue;
+      const bool visible_to_local_team =
+          players[i].team == players.front().team || i <= 6;
+      if (visible_to_local_team) players[i].spotted_mask = local_bit;
+    }
   }
   arena.player_ids.reserve(players.size());
   for (const auto& player : players) {

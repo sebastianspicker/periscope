@@ -142,7 +142,7 @@ BlueSensorReport Cs2Radar::blue_multi_sensor_scan() {
 bool Cs2Radar::scan_entities() { if (!attached_) return false; ::cs2::Cs2GameReader reader{&world_, game_pid_}; players_ = reader.resolve_players(pid_, true); hud_ = read_hud(); for (const auto& player : players_) if (player.controller_index == 1) { local_ = player; break; } rpm_reads_ = static_cast<int>(players_.size()) * 13 + 128; bytes_read_ = static_cast<uint64_t>(rpm_reads_) * 8; return !players_.empty(); }
 ::cs2::HudRadarState Cs2Radar::read_hud() { ::cs2::Cs2GameReader reader{&world_, game_pid_}; return reader.resolve_hud_radar(pid_, true); }
 const ::cs2::PlayerData* Cs2Radar::local() const { return local_.pawn_index ? &local_ : nullptr; }
-void Cs2Radar::render_radar_console(bool show_all) { ::cs2::render_radar_console("T0 RPM", players_, local(), hud_, show_all); }
+void Cs2Radar::render_radar_console(::cs2::IntelMode mode) { ::cs2::render_radar_console("T0 RPM", players_, local(), hud_, mode); }
 Cs2RadarStatus Cs2Radar::status() const { int enemies = 0; for (const auto& player : players_) if (local() && player.team != local_.team) ++enemies; return {attached_, static_cast<int>(players_.size()), enemies, static_cast<int>(players_.size()) - enemies - (local() ? 1 : 0), static_cast<int>(backend_.handle_count()), bytes_read_, rpm_reads_, "RPM Source 2 chunked entity-list + CCSGO_HudRadar", hud_}; }
 uint32_t Cs2Radar::pid() const { return pid_; } uint32_t Cs2Radar::game_pid() const { return game_pid_; }
 }  // namespace t0_cs2

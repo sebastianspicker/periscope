@@ -13,29 +13,29 @@ struct FieldOffsets {
   int team = 0x3E7;             // m_iTeamNum
   int life_state = 0x354;       // m_lifeState
   int scene_node = 0x330;       // m_pGameSceneNode
-  int armor = 0x25C4;           // m_ArmorValue (CCSPlayerPawn approx)
-  int old_origin = 0x13B8;      // m_vOldOrigin (dual origin source)
+  int armor = 0x1ED0;           // m_ArmorValue (C_CSPlayerPawn)
+  int old_origin = 0x14A4;      // m_vOldOrigin (dual origin source)
   // CGameSceneNode
   int node_origin = 0xC8;       // m_vecAbsOrigin
   // C_CSPlayerPawn
-  int eye_angles = 0x3340;      // m_angEyeAngles
-  int spotted_mask = 0x26E0;    // entitySpottedState + m_bSpottedByMask
-  int is_scoped = 0x26F8;       // m_bIsScoped
-  int is_defusing = 0x2700;     // m_bIsDefusing
-  int flash_duration = 0x1588;  // m_flFlashDuration
-  int weapon_services = 0x13E0; // m_pWeaponServices
-  int active_weapon = 0x58;     // CPlayer_WeaponServices::m_hActiveWeapon
-  // CCSPlayerController
-  int controller_pawn_handle = 0x914;  // m_hPlayerPawn
-  int controller_name = 0x6E8;         // m_iszPlayerName (char[128] sim)
-  int controller_is_local = 0x6F0;     // m_bIsLocalPlayerController (sim)
-  int desired_fov = 0x78C;             // m_iDesiredFOV
+  int eye_angles = 0x3600;      // m_angEyeAngles
+  int spotted_mask = 0x1E94;    // m_entitySpottedState + EntitySpottedState_t::m_bSpottedByMask
+  int is_scoped = 0x1EA0;       // m_bIsScoped
+  int is_defusing = 0x1EA2;     // m_bIsDefusing
+  int flash_duration = 0x1510;  // m_flFlashDuration (C_CSPlayerPawnBase)
+  int weapon_services = 0x12F0; // m_pWeaponServices (C_BasePlayerPawn)
+  int active_weapon = 0x60;     // CPlayer_WeaponServices::m_hActiveWeapon
+  // CCSPlayerController (base CBasePlayerController layout)
+  int controller_pawn_handle = 0x92C;  // m_hPlayerPawn
+  int controller_name = 0x6FC;         // m_iszPlayerName (char[128] sim)
+  int controller_is_local = 0x780;     // m_bIsLocalPlayerController (sim, past name buffer)
+  int desired_fov = 0x794;             // m_iDesiredFOV
   // C_PlantedC4
-  int bomb_ticking = 0xF48;     // m_bBombTicking
-  int bomb_site = 0xF4C;        // m_nBombSite
-  int bomb_blow = 0xF58;        // m_flC4Blow
-  int bomb_defuse_count = 0xF70;// m_flDefuseCountDown
-  int bomb_defused = 0xF7C;     // m_bBombDefused
+  int bomb_ticking = 0x1288;     // m_bBombTicking
+  int bomb_site = 0x128C;        // m_nBombSite
+  int bomb_blow = 0x12B8;        // m_flC4Blow
+  int bomb_defuse_count = 0x12D8;// m_flDefuseCountDown
+  int bomb_defused = 0x12DC;     // m_bBombDefused
 
   static const FieldOffsets& get();
 };
@@ -58,16 +58,16 @@ struct HudRadarOffsets {
 // Module-relative global RVAs (client.dll) — educational defaults matching
 // data/cs2/offsets_snapshot.json. Live attachment stays outside simulation.
 struct ModuleGlobals {
-  std::uint64_t entity_list = 0x254FE70;
-  std::uint64_t game_entity_system = 0x254FE70;
-  std::uint64_t highest_entity_index = 0x2090;
-  std::uint64_t local_player_pawn = 0x23A5238;
-  std::uint64_t local_player_controller = 0x237FB70;
-  std::uint64_t view_matrix = 0x23AA340;
-  std::uint64_t view_angles = 0x23BAE18;
-  std::uint64_t planted_c4 = 0x236F658;
-  std::uint64_t csgo_input = 0x23BA790;
-  std::uint64_t sensitivity = 0x23A2228;
+  std::uint64_t entity_list = 0x271C8B8;
+  std::uint64_t game_entity_system = 0x271C8B8;
+  std::uint64_t highest_entity_index = 0x2120;
+  std::uint64_t local_player_pawn = 0x25676D8;
+  std::uint64_t local_player_controller = 0x253EEF8;
+  std::uint64_t view_matrix = 0x256CFE0;
+  std::uint64_t view_angles = 0x257DE08;
+  std::uint64_t planted_c4 = 0x24CD930;
+  std::uint64_t csgo_input = 0x257D780;
+  std::uint64_t sensitivity = 0x25649D8;
 
   static const ModuleGlobals& get();
 };

@@ -19,6 +19,7 @@
 | [CROSSCUTTING.md](CROSSCUTTING.md) | Evasion, features, ops, structural themes |
 | [SHARED.md](SHARED.md) | Shared packages under `src/` and `adapters/` |
 | [RESIDUAL-RESEARCH.md](RESIDUAL-RESEARCH.md) | VMX / BYOVD / DMA / SMM lab notes |
+| [STEALTH-POSTURE.md](STEALTH-POSTURE.md) | Intel modes, read shaping, degrade ladder |
 
 ## Reference
 

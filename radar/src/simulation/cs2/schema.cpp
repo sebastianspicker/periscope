@@ -22,41 +22,41 @@ const SchemaField kSceneNodeFields[] = {
 };
 
 const SchemaField kPlayerPawnFields[] = {
-    {"C_CSPlayerPawn", "m_vOldOrigin", fnv1a32("m_vOldOrigin"), 0x13B8, "Vector"},
-    {"C_CSPlayerPawn", "m_angEyeAngles", fnv1a32("m_angEyeAngles"), 0x3340,
+    {"C_CSPlayerPawn", "m_vOldOrigin", fnv1a32("m_vOldOrigin"), 0x14A4, "Vector"},
+    {"C_CSPlayerPawn", "m_angEyeAngles", fnv1a32("m_angEyeAngles"), 0x3600,
      "QAngle"},
-    {"C_CSPlayerPawn", "m_bIsScoped", fnv1a32("m_bIsScoped"), 0x26F8, "bool"},
-    {"C_CSPlayerPawn", "m_bIsDefusing", fnv1a32("m_bIsDefusing"), 0x2700, "bool"},
-    {"C_CSPlayerPawn", "m_flFlashDuration", fnv1a32("m_flFlashDuration"), 0x1588,
+    {"C_CSPlayerPawn", "m_bIsScoped", fnv1a32("m_bIsScoped"), 0x1EA0, "bool"},
+    {"C_CSPlayerPawn", "m_bIsDefusing", fnv1a32("m_bIsDefusing"), 0x1EA2, "bool"},
+    {"C_CSPlayerPawn", "m_flFlashDuration", fnv1a32("m_flFlashDuration"), 0x1510,
      "float"},
-    {"C_CSPlayerPawn", "m_ArmorValue", fnv1a32("m_ArmorValue"), 0x25C4, "int32"},
-    {"C_CSPlayerPawn", "m_pWeaponServices", fnv1a32("m_pWeaponServices"), 0x13E0,
+    {"C_CSPlayerPawn", "m_ArmorValue", fnv1a32("m_ArmorValue"), 0x1ED0, "int32"},
+    {"C_CSPlayerPawn", "m_pWeaponServices", fnv1a32("m_pWeaponServices"), 0x12F0,
      "CPlayer_WeaponServices*"},
     {"C_CSPlayerPawn", "m_entitySpottedState", fnv1a32("m_entitySpottedState"),
-     0x26D0, "EntitySpottedState_t"},
+     0x1E88, "EntitySpottedState_t"},
 };
 
 const SchemaField kControllerFields[] = {
-    {"CCSPlayerController", "m_hPlayerPawn", fnv1a32("m_hPlayerPawn"), 0x914,
+    {"CCSPlayerController", "m_hPlayerPawn", fnv1a32("m_hPlayerPawn"), 0x92C,
      "CHandle<C_CSPlayerPawn>"},
-    {"CCSPlayerController", "m_iszPlayerName", fnv1a32("m_iszPlayerName"), 0x6E8,
+    {"CCSPlayerController", "m_iszPlayerName", fnv1a32("m_iszPlayerName"), 0x6FC,
      "char[128]"},
-    {"CCSPlayerController", "m_iDesiredFOV", fnv1a32("m_iDesiredFOV"), 0x78C,
+    {"CCSPlayerController", "m_iDesiredFOV", fnv1a32("m_iDesiredFOV"), 0x794,
      "uint32"},
 };
 
 const SchemaField kPlantedC4Fields[] = {
-    {"C_PlantedC4", "m_bBombTicking", fnv1a32("m_bBombTicking"), 0xF48, "bool"},
-    {"C_PlantedC4", "m_nBombSite", fnv1a32("m_nBombSite"), 0xF4C, "int32"},
-    {"C_PlantedC4", "m_flC4Blow", fnv1a32("m_flC4Blow"), 0xF58, "float"},
-    {"C_PlantedC4", "m_flDefuseCountDown", fnv1a32("m_flDefuseCountDown"), 0xF70,
+    {"C_PlantedC4", "m_bBombTicking", fnv1a32("m_bBombTicking"), 0x1288, "bool"},
+    {"C_PlantedC4", "m_nBombSite", fnv1a32("m_nBombSite"), 0x128C, "int32"},
+    {"C_PlantedC4", "m_flC4Blow", fnv1a32("m_flC4Blow"), 0x12B8, "float"},
+    {"C_PlantedC4", "m_flDefuseCountDown", fnv1a32("m_flDefuseCountDown"), 0x12D8,
      "float"},
-    {"C_PlantedC4", "m_bBombDefused", fnv1a32("m_bBombDefused"), 0xF7C, "bool"},
+    {"C_PlantedC4", "m_bBombDefused", fnv1a32("m_bBombDefused"), 0x12DC, "bool"},
 };
 
 const SchemaField kWeaponServicesFields[] = {
     {"CPlayer_WeaponServices", "m_hActiveWeapon", fnv1a32("m_hActiveWeapon"),
-     0x58, "CHandle<C_BasePlayerWeapon>"},
+     0x60, "CHandle<C_BasePlayerWeapon>"},
 };
 
 }  // namespace

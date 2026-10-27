@@ -42,7 +42,7 @@ static bool hijack_read_fn(uint64_t addr, void* buf, size_t size) {
 }
 #endif
 
-static int run_sim_adaptive() {
+static int run_sim_adaptive(bool full_intel = false) {
   std::printf("\n=== T0 CS2 Radar SIMULATION (arena, no live CS2) ===\n");
   auto arena = ::cs2::make_cs2_arena();
   std::printf("T0 red capability catalog:\n");
@@ -53,7 +53,8 @@ static int run_sim_adaptive() {
     std::fprintf(stderr, "FAIL: sim attach/scan failed\n");
     return 1;
   }
-  radar.render_radar_console(true);
+  radar.render_radar_console(full_intel ? ::cs2::IntelMode::Full
+                                        : ::cs2::IntelMode::HudEcho);
   const auto report = radar.adaptive_red_loop();
   std::printf("T0 adaptive verdict: survived=%d detected=%d\n",
               report.survived, report.detected_count);
@@ -66,7 +67,10 @@ static int run_sim_adaptive() {
   return 0;
 }
 
-int main() {
+int main(int argc, char** argv) {
+  // `--full` pins the all-entity intel mode; the default stays hud-echo
+  // (HUD-radar-equivalent intel only).
+  const bool full_intel = ::cs2::has_flag(argc, argv, "--full");
   std::printf("=== T0 CS2 Radar Demo (Periscope Startup Flow) ===\n\n");
 
 #if LR_PLATFORM_WINDOWS
@@ -84,7 +88,7 @@ int main() {
   auto cs2 = real::cs2::find_cs2();
   if (!cs2.has_value()) {
     std::printf("  CS2 not found — falling back to SIMULATION path\n");
-    return run_sim_adaptive();
+    return run_sim_adaptive(full_intel);
   }
   std::printf("  OK: cs2.exe PID=%u\n", cs2->pid);
 
@@ -295,7 +299,7 @@ int main() {
 #else
   // Non-Windows: run sim-based demo
   std::printf("Non-Windows platform: running sim-based demo\n");
-  return run_sim_adaptive();
+  return run_sim_adaptive(full_intel);
 #endif
 
   return 0;

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "cs2/entities.hpp"
+#include "cs2/radar_console.hpp"
 #include "cs2/offsets.hpp"
 #include "cs2/radar_math.hpp"
 #include "cs2/simulator.hpp"
@@ -65,7 +66,7 @@ class Cs2Radar {
   EscalationState escalate_down();
   BlueSensorReport blue_multi_sensor_scan();
   bool scan_entities();
-  void render_radar_console(bool show_all = false);
+  void render_radar_console(::cs2::IntelMode mode = ::cs2::IntelMode::HudEcho);
   Cs2RadarStatus status() const;
   uint32_t pid() const;
   uint32_t game_pid() const;

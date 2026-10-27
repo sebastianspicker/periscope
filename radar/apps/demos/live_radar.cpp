@@ -37,12 +37,26 @@
 #pragma comment(linker, "/SUBSYSTEM:CONSOLE")
 #endif
 
-int main() {
+int main(int argc, char** argv) {
+  // `--full` pins the all-entity intel mode. `--strict-intel` pins hud-echo and
+  // treats an unreadable spotted flag as hidden. Default is auto: hud-echo with
+  // the degrade ladder free to tighten it, never to relax past hud-echo.
+  bool full_intel = false;
+  bool strict_intel = false;
+  for (int i = 1; i < argc; ++i) {
+    if (std::strcmp(argv[i], "--full") == 0) full_intel = true;
+    if (std::strcmp(argv[i], "--strict-intel") == 0) strict_intel = true;
+  }
   setvbuf(stdout, nullptr, _IONBF, 0);
   setvbuf(stderr, nullptr, _IONBF, 0);
 
   logf("=== Live CS2 Radar Overlay (L2-pure stack) ===\n");
-  logf("Keys: END=quit  F=filter  R=refresh  D=debug  B=blue score\n\n");
+  logf("Keys: END=quit  F=filter  R=refresh  D=debug  I=intel-policy  B=blue score\n");
+  logf("Intel policy: %s (default auto → hud-echo; --full pins all-entity)\n\n",
+       real::cs2::stack::intel_policy_name(
+           full_intel ? real::cs2::stack::IntelPolicy::Full
+                      : (strict_intel ? real::cs2::stack::IntelPolicy::HudEcho
+                                      : real::cs2::stack::IntelPolicy::Auto)));
 
 #if LR_PLATFORM_WINDOWS
   real::cs2::stack::apply_process_disguise("ui");
@@ -349,6 +363,8 @@ int main() {
   loop.c_hud = c_hud;
   loop.hud_ok = hud_ok;
   loop.ui_holds_cs2_handle = ui_holds_cs2_handle;
+  loop.full_intel = full_intel;
+  loop.strict_intel = strict_intel;
   loop.settings = &settings;
   loop.gui = &gui;
   return run_live_radar_loop(loop);

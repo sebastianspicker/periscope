@@ -31,21 +31,42 @@ bool ReadThrottle::local_due(std::chrono::steady_clock::time_point now) {
 bool ReadThrottle::far_due(std::chrono::steady_clock::time_point now) {
   return now >= next_far;
 }
-void ReadThrottle::arm_full(std::chrono::steady_clock::time_point now) {
-  if (rng == 0)
-    rng = 0xC0FFEEu ^ static_cast<std::uint64_t>(
-                          now.time_since_epoch().count());
-  const double base_ms = 1000.0 / std::max(1, target_hz);
+namespace {
+
+// Shared jittered re-arm. A zero/negative rate means "off": park the deadline
+// far enough out that the caller's `*_due` check never fires, instead of the
+// old behaviour where far_hz=0 still armed a 1000 ms cadence.
+std::chrono::steady_clock::time_point arm_after(
+    std::chrono::steady_clock::time_point now, int hz, int min_ms, float jitter_frac,
+    std::uint64_t& rng) {
+  if (hz <= 0) return now + std::chrono::seconds(10);
+  const double base_ms = 1000.0 / std::max(1, hz);
   const double j =
       1.0 + jitter_frac * (static_cast<double>(xorshift(rng) % 2001) / 1000.0 - 1.0);
-  next_full = now + std::chrono::milliseconds(std::max(8, static_cast<int>(base_ms * j)));
+  const auto ms = std::max(min_ms, static_cast<int>(base_ms * j));
+  return now + std::chrono::milliseconds(ms);
+}
+
+}  // namespace
+
+void ReadThrottle::arm_full(std::chrono::steady_clock::time_point now) {
+  if (rng == 0)
+    rng = 0xC0FFEEu ^ static_cast<std::uint64_t>(now.time_since_epoch().count());
+  next_full = arm_after(now, target_hz, 8, jitter_frac, rng);
 }
 void ReadThrottle::arm_local(std::chrono::steady_clock::time_point now) {
-  next_local = now + std::chrono::milliseconds(std::max(8, 1000 / std::max(1, local_hz)));
+  if (rng == 0)
+    rng = 0xC0FFEEu ^ static_cast<std::uint64_t>(now.time_since_epoch().count());
+  // Local refresh is jittered too: a fixed 15 Hz cadence is as recognisable as
+  // a fixed full-scan cadence once blue correlates timestamps.
+  next_local = arm_after(now, local_hz, 8, jitter_frac, rng);
 }
 void ReadThrottle::arm_far(std::chrono::steady_clock::time_point now) {
-  next_far = now + std::chrono::milliseconds(std::max(20, 1000 / std::max(1, far_hz)));
+  if (rng == 0)
+    rng = 0xC0FFEEu ^ static_cast<std::uint64_t>(now.time_since_epoch().count());
+  next_far = arm_after(now, far_hz, 20, jitter_frac, rng);
 }
+
 
 // ── Ladder ────────────────────────────────────────────────────────
 const char* AttachLadder::stage_name(AttachStage s) noexcept {

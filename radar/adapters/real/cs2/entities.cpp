@@ -145,8 +145,12 @@ Result<Cs2PlayerEntity> read_player_at(Cs2MemoryReader& reader,
         OBF("m_bSpotted"));
     if (spotted) {
       entity.spotted = (*spotted) != 0;
+      entity.spotted_known = true;
     } else {
-      entity.spotted = true;  // fail-open so radar still works if layout drifts
+      // Fail open for the radar, but record the unknown so strict intel can
+      // hide instead of leaking an unspotted enemy through hud-echo.
+      entity.spotted = true;
+      entity.spotted_known = false;
     }
   }
 

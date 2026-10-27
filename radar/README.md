@@ -103,6 +103,9 @@ Runtime knobs: `LR_MODE=sim|real|hybrid`, `LR_VERBOSE=0|1`.
 LR_MODE=sim ./build/strategy_lab run 01_external_rpm
 ./build/strategy_lab all --quiet
 
+# Portable host tests
+ctest --test-dir build --output-on-failure
+
 # Per-tier deterministic simulation demos
 ./build/radar_t0
 ./build/radar_t1
@@ -129,6 +132,7 @@ are enabled. It uses simulated entities and does not require a game process.
 | [docs/THREAT-TIERS.md](docs/THREAT-TIERS.md) | T0–T4 delivery detail |
 | [docs/STRATEGY-CATALOG.md](docs/STRATEGY-CATALOG.md) | Human index of strategy pairs |
 | [docs/CURRICULUM.md](docs/CURRICULUM.md) | Suggested learning order |
+| [docs/STEALTH-POSTURE.md](docs/STEALTH-POSTURE.md) | Intel modes, read shaping, degrade ladder |
 
 Live catalog truth is always `./build/strategy_lab list` (hundreds of registered pairs under `scenarios/strategies/`).
 

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "cs2/entities.hpp"
+#include "cs2/radar_console.hpp"
 #include "cs2/radar_math.hpp"
 #include "cs2/simulator.hpp"
 #include "sim/world.hpp"
@@ -44,7 +45,7 @@ struct Cs2RadarStatus {
 class Cs2Radar {
  public:
   explicit Cs2Radar(sim::World& world) : world_(world) {}
-   bool attach_syscall(); bool scan_entities(); void render_radar_console(bool show_all = false);
+   bool attach_syscall(); bool scan_entities(); void render_radar_console(::cs2::IntelMode mode = ::cs2::IntelMode::HudEcho);
    EscalationState escalate_down(); BlueSensorReport blue_multi_sensor_scan();
   Cs2RadarStatus status() const; uint32_t pid() const { return pid_; }
   uint32_t game_pid() const { return game_pid_; }

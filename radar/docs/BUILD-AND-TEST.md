@@ -35,9 +35,14 @@ See `CMakeLists.txt` for the full list of `LAB_ALLOW_*` flags that enable additi
 
 ## Test
 
+```bash
+ctest --test-dir build --output-on-failure   # portable host tests
+./build/strategy_lab all --quiet             # strategy pairs
 ```
-./build/strategy_lab all --quiet
-```
+
+`ctest` covers host-only logic that links no real adapter (currently the intel
+and read-shaping posture policy in `tests/stack_posture_test.cpp`). It runs with
+the default simulation configuration on every platform.
 
 ## Common Binaries
 

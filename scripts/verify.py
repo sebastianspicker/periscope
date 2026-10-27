@@ -31,6 +31,7 @@ def verify_radar() -> None:
         "-DLR_BUILD_STRATEGY_LAB=ON",
     )
     run("cmake", "--build", str(RADAR_BUILD), "-j", BUILD_JOBS)
+    run("ctest", "--test-dir", str(RADAR_BUILD), "--output-on-failure")
     run(str(RADAR_BUILD / "strategy_lab"), "list")
     run(str(RADAR_BUILD / "strategy_lab"), "all", "--quiet")
 

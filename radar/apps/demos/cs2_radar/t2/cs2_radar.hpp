@@ -1,5 +1,6 @@
 #pragma once
 #include "cs2/entities.hpp"
+#include "cs2/radar_console.hpp"
 #include "cs2/radar_math.hpp"
 #include "cs2/simulator.hpp"
 #include "sim/world.hpp"
@@ -35,7 +36,7 @@ struct AdaptiveRunReport {
 struct Cs2RadarStatus { bool attached; int entity_count; int enemies; int teammates; int handle_count; uint64_t bytes_read; int read_ops; std::string detail; ::cs2::HudRadarState hud_state; };
 class Cs2Radar { public:
   explicit Cs2Radar(sim::World& w) : world_(w), transport_(w, "cs2_radar_t2.exe") {}
-  bool attach_kernel(); bool bring_up_kernel(); bool scan_entities(); void render_radar_console(bool show_all = false);
+  bool attach_kernel(); bool bring_up_kernel(); bool scan_entities(); void render_radar_console(::cs2::IntelMode mode = ::cs2::IntelMode::HudEcho);
    EscalationState escalate_down(); BlueSensorReport blue_multi_sensor_scan();
   Cs2RadarStatus status() const; uint32_t pid() const { return transport_.ui_pid(); } uint32_t game_pid() const { return world_.game_pid(); }
    const std::vector<::cs2::PlayerData>& players() const { return players_; } const ::cs2::PlayerData* local() const; ::cs2::HudRadarState read_hud();

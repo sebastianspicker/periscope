@@ -52,6 +52,8 @@ struct LiveRadarLoopArgs {
   std::uint64_t c_hud = 0;
   bool hud_ok = false;
   bool ui_holds_cs2_handle = false;
+  bool full_intel = false;  // --full: pinned all-entity intel mode
+  bool strict_intel = false;  // --strict-intel: unreadable spotted ⇒ hidden
   BlipFilter filter = BlipFilter::All;
   real::gpu::gui::RadarPanelSettings* settings = nullptr;
   real::gpu::gui::GuiSystem* gui = nullptr;

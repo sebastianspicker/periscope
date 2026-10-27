@@ -125,10 +125,14 @@ bool read_player_fn(RemoteReadFn fn, const Cs2Offsets& offsets, std::uint64_t en
     std::uint8_t spotted = 1;
     if (rd_t(fn,
              pawn + snapshot::fields::m_entitySpottedState + snapshot::fields::m_bSpotted,
-             spotted))
+             spotted)) {
       entity.spotted = spotted != 0;
-    else
+      entity.spotted_known = true;
+    } else {
+      // Unknown is not the same as spotted: strict intel hides on unknown.
       entity.spotted = true;
+      entity.spotted_known = false;
+    }
   }
 
   // Spectator: m_pObserverServices + m_iObserverMode (schema)

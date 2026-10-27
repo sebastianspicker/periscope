@@ -61,18 +61,32 @@ int run_live_radar_loop(LiveRadarLoopArgs& a) {
   int last_entity_count = -1;
   bool first_frame = true;
   bool key_f_was = false, key_r_was = false, key_d_was = false, key_b_was = false;
-  bool insert_was = false, lbtn_was = false;
+  bool insert_was = false, lbtn_was = false, key_i_was = false;
+  // HudEcho is the default posture: the radar shows only what the official
+  // in-game radar could show. The I key cycles auto → pinned hud-echo → pinned
+  // full; a pinned mode is never silently overridden by the degrade ladder.
+  // `--full` starts pinned to full, `--strict-intel` starts pinned to hud-echo.
+  real::cs2::stack::IntelPolicy intel_policy =
+      a.full_intel ? real::cs2::stack::IntelPolicy::Full
+                   : (a.strict_intel ? real::cs2::stack::IntelPolicy::HudEcho
+                                     : real::cs2::stack::IntelPolicy::Auto);
+  real::cs2::stack::IntelMode intel_mode = real::cs2::stack::IntelMode::HudEcho;
+  real::cs2::stack::BehaviorShaper shaper{};
+  real::cs2::stack::DegradeLadder ladder_policy{};
+  const real::cs2::stack::ReadRates posture_floor{8, 15, 4};
   real::cs2::stack::ReadThrottle throttle{};
-  // Slightly lower full-scan rate cuts IPC tickets hard (L2 pure path).
-  throttle.target_hz = 20;
-  throttle.local_hz = 45;
-  throttle.far_hz = 6;
+  // Quiet floors (BehaviorShaper is the authority; events raise briefly).
+  throttle.target_hz = posture_floor.full_hz;
+  throttle.local_hz = posture_floor.local_hz;
+  throttle.far_hz = posture_floor.far_hz;
   throttle.arm_full(std::chrono::steady_clock::now());
   throttle.arm_local(std::chrono::steady_clock::now());
   throttle.arm_far(std::chrono::steady_clock::now());
   real::cs2::EntityReadResult entities{};
   real::Result<real::cs2::Cs2PlayerEntity> local{};
   real::cs2::stack::RoundIntel round_intel{};
+  ac::Vec3 prev_local_origin{};
+  bool have_prev_local = false;
   while (true) {
     if (!renderer->process_messages()) break;
 
@@ -83,6 +97,7 @@ int run_live_radar_loop(LiveRadarLoopArgs& a) {
     const bool key_d = (GetAsyncKeyState('D') & 0x8000) != 0;
     const bool key_b = (GetAsyncKeyState('B') & 0x8000) != 0;
     const bool key_insert = (GetAsyncKeyState(VK_INSERT) & 0x8000) != 0;
+    const bool key_i = (GetAsyncKeyState('I') & 0x8000) != 0;
     const bool lbtn_down = (GetAsyncKeyState(VK_LBUTTON) & 0x8000) != 0;
     if (key_f && !key_f_was) {
       filter = static_cast<BlipFilter>((static_cast<int>(filter) + 1) % 3);
@@ -123,10 +138,16 @@ int run_live_radar_loop(LiveRadarLoopArgs& a) {
       gui.toggle_open();
       logf("[input] control_panel=%s\n", gui.is_open() ? "open" : "closed");
     }
+    if (key_i && !key_i_was) {
+      intel_policy = real::cs2::stack::next_intel_policy(intel_policy);
+      logf("[input] intel_policy=%s\n",
+           real::cs2::stack::intel_policy_name(intel_policy));
+    }
     key_f_was = key_f;
     key_r_was = key_r;
     key_d_was = key_d;
     key_b_was = key_b;
+    key_i_was = key_i;
     insert_was = key_insert;
 
     // Mouse in window-relative pixels (y-down), for GUI hit-testing.
@@ -261,9 +282,17 @@ int run_live_radar_loop(LiveRadarLoopArgs& a) {
         if (!ent.is_alive && !ent.is_bomb) return;
         if (!ent.is_local_player && !ent.is_bomb) {
           if (ent.dormant) return;
-          // Spotted filter: show local always; others only if spotted
-          // (game radar still shows teammates — apply only to enemies).
-          if (!ent.spotted && ent.team != local_team) return;
+          // HudEcho: hide unspotted enemies — exactly what the official radar
+          // shows. In strict mode an unreadable spotted flag counts as hidden,
+          // so a failed read cannot leak an unspotted enemy.
+          if (intel_mode == real::cs2::stack::IntelMode::HudEcho &&
+              ent.team != local_team) {
+            if (!ent.spotted_known) {
+              if (a.strict_intel) return;
+            } else if (!ent.spotted) {
+              return;
+            }
+          }
           if (filter == BlipFilter::EnemyOnly && ent.team == local_team) return;
           if (filter == BlipFilter::TeamOnly && ent.team != local_team) return;
         }
@@ -339,6 +368,30 @@ int run_live_radar_loop(LiveRadarLoopArgs& a) {
           push_entity_blip(bomb);
         }
       }
+
+      // Behavior shaping: reads cluster around gameplay events. Track the
+      // local player's movement to fold rotates/retakes into the bursts.
+      float local_move = 0.f;
+      if (have_prev_local && local) {
+        const float dx = local->origin.x - prev_local_origin.x;
+        const float dy = local->origin.y - prev_local_origin.y;
+        const float dz = local->origin.z - prev_local_origin.z;
+        local_move = std::sqrt(dx * dx + dy * dy + dz * dz);
+      }
+      if (local) {
+        prev_local_origin = local->origin;
+        have_prev_local = true;
+      }
+      round_intel.valid = true;
+      shaper.note_round(real::cs2::stack::round_events_of(round_intel), local_move,
+                        now_steady);
+      // Event shaping raises the floor, the degrade ladder caps it, and a
+      // pinned policy decides intel. Applying the ladder last is what lets a
+      // degrade survive the next frame's shaping.
+      const auto posture = real::cs2::stack::apply_posture(
+          shaper, ladder_policy, intel_policy, now_steady, posture_floor);
+      real::cs2::stack::apply_rates(throttle, posture.rates);
+      intel_mode = posture.mode;
 
       if (first_frame) {
         logf("[frame0] entities=%d polar=%d edge=%.1f yaw=%.1f filter=%s blips=%zu\n",
@@ -454,13 +507,22 @@ int run_live_radar_loop(LiveRadarLoopArgs& a) {
       bcfg.has_worker = ladder.worker_ipc;
       bcfg.ui_detached = ladder.ui_detached;
       auto sc = real::cs2::stack::score_blue_dual(bcfg);
+      // Silent degrade: a rising composite steps the posture down (slower
+      // scans, hud-echo intel) with no visible reaction; three clean windows
+      // relax it one rung. The step only chooses rates/mode for `auto` — a
+      // pinned policy still wins inside apply_posture.
+      real::cs2::stack::ReadRates stepped{};
+      ladder_policy.step(sc.composite, shaper.rates_at(now_steady, posture_floor),
+                         stepped);
       logf("[blue] ladder=%s ui_detached=%d %s\n",
            real::cs2::stack::AttachLadder::stage_name(ladder.stage),
            ladder.ui_detached ? 1 : 0, ladder.last_scar);
       logf("[blue-dual] composite=%d detect=%d reason=%s scar_owner=%s scar_pid=%u "
-           "handle=%d vol=%d co=%d reads~%llu\n",
+           "handle=%d vol=%d co=%d policy=%s intel=%s posture=%d reads~%llu\n",
            sc.composite, sc.would_detect ? 1 : 0, sc.primary_reason, sc.scar_owner,
            sc.scar_pid, sc.handle_score, sc.volume_score, sc.cooccur_score,
+           real::cs2::stack::intel_policy_name(intel_policy),
+           real::cs2::stack::intel_mode_name(intel_mode), ladder_policy.level,
            (unsigned long long)sc.rpm_reads_window);
       blue_reads_mark = g_live_reads;
       blue_bytes_mark = g_live_bytes;

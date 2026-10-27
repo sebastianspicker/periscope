@@ -5,6 +5,7 @@
 
 #include "real/cs2/entities.hpp"
 #include "real/cs2/offsets.hpp"
+#include "real/cs2/posture.hpp"
 #include "real/error.hpp"
 #include "real/platform.hpp"
 
@@ -223,6 +224,37 @@ struct BlueDualConfig {
 };
 
 BlueDualScore score_blue_dual(const BlueDualConfig& cfg) noexcept;
+
+// ── Intel exposure + stealth shaping (Oct-2026 posture) ──────────
+// The policy itself lives in real/cs2/posture.hpp so it stays pure and
+// host-testable: IntelMode, IntelPolicy, BehaviorShaper, DegradeLadder and the
+// apply_posture composition. Ordering is load-bearing — the event shaper raises
+// the floor and the degrade ladder caps it afterwards, otherwise the per-frame
+// shaper would wipe out any degrade on the next frame.
+using IntelMode = real::cs2::stack::IntelMode;
+using IntelPolicy = real::cs2::stack::IntelPolicy;
+using BehaviorShaper = real::cs2::stack::BehaviorShaper;
+using DegradeLadder = real::cs2::stack::DegradeLadder;
+using Posture = real::cs2::stack::Posture;
+using ReadRates = real::cs2::stack::ReadRates;
+using RoundEvents = real::cs2::stack::RoundEvents;
+
+/// Project world round intel onto the pure policy's event view.
+inline RoundEvents round_events_of(const RoundIntel& intel) noexcept {
+  RoundEvents ev;
+  ev.valid = intel.valid;
+  ev.is_round = intel.is_round;
+  ev.bomb_planted = intel.bomb_planted;
+  ev.bomb_defusing = intel.bomb_defusing;
+  return ev;
+}
+
+/// Copy resolved rates onto the live throttle.
+inline void apply_rates(ReadThrottle& t, const ReadRates& r) noexcept {
+  t.target_hz = r.full_hz;
+  t.local_hz = r.local_hz;
+  t.far_hz = r.far_hz;
+}
 
 // ── Offset auto-update + write-back ──────────────────────────────
 struct OffsetUpdateResult {
