@@ -126,6 +126,8 @@ dist/
 build/
 build-*/
 build_*/
+# This simulation lesson is source, not a generated build directory.
+!/radar/scenarios/strategies/crosscutting/build_watermark/
 **/CMakeFiles/
 **/CMakeCache.txt
 **/cmake_install.cmake
