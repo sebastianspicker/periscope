@@ -2,7 +2,7 @@
 
 Vision track of [Periscope](../README.md) (`periscope/vision`). Sister track: [`../radar/`](../radar/) (memory-path radar lab, MIT). This track is pixels-only: offline video and live screen/device capture. It does not open the game process, read game memory, or inject input.
 
-Pre-alpha research tooling for Counter-Strike 2: segment visible player pixels and draw dual-stroke outlines. Offline file pipelines and a live screen/device path share the same segmenter and renderer stack.
+Pre-alpha research tooling for Counter-Strike 2: segment visible player pixels and draw dual-stroke outlines. Offline file pipelines and a live screen/device path share the same segmenter and renderer stack. The primary live deployment is a second Windows device fed by an HDMI capture card, so the gaming machine runs nothing that touches the process — see [docs/CONTOUR_PIPELINE.md](docs/CONTOUR_PIPELINE.md).
 
 Package: `cs2-vision-access` 0.1.0. CLI: `cs2-vision`. License: AGPL-3.0-only. Python: 3.11–3.13.
 
@@ -14,6 +14,7 @@ Help low-vision accessibility research by outlining visible player models on CS2
 
 - Offline outline and timing (`outline`, `benchmark`, `outline-presets`)
 - Live capture and OS overlay (`live`), plus a tkinter desktop dashboard (`gui`)
+- Second-device contour composite: capture-card fourcc negotiation, bounded reconnect with stale-frame drain, `--max-capture-age-ms` latency bound, shared-memory frame ring (`--output-stream shm:<name>`), and a 1:1 fullscreen presenter (`docs/CONTOUR_PIPELINE.md`)
 - Dataset staging, validation, audit, session-split assembly, box import, draft mask review
 - Fine-tune and export of YOLO-seg ONNX models with checksum manifests (`train`)
 - Multi-stage local auto-train (`train-auto`) and remote notebook loop (`training/remote_autonomous/`)
@@ -35,8 +36,9 @@ Help low-vision accessibility research by outlining visible player models on CS2
 |------|----------------|
 | Offline outline | `cs2-vision outline`, `benchmark`, `outline-presets` |
 | Live overlay | `cs2-vision live`, `setup` |
+| Second-device composite | `live --source-type capture-device --output-stream shm:<name>`, `--fourcc`, `--max-capture-age-ms` |
 | Desktop GUI | `cs2-vision gui` |
-| Capture | Screen (`mss`), OpenCV capture device, local video file |
+| Capture | Screen (`mss`), OpenCV capture device (fourcc negotiation, bounded reconnect), local video file |
 | Segmenters | Ultralytics ONNX seg/detect, optional RF-DETR (`rfdetr` extra), Vombit+EdgeSAM (`cs2-sam`) |
 | Dataset | `extract-frames`, `validate-dataset`, `audit-dataset`, `assemble-dataset`, box import, draft review |
 | Train | `cs2-vision train`, `train-auto`, modules under `training/` |
@@ -47,7 +49,8 @@ Help low-vision accessibility research by outlining visible player models on CS2
 
 ### Limitations
 
-- Pre-alpha. Public CI runs lint, type checks and a package build (Python 3.11–3.13). It does not run multi-epoch Ultralytics training or validate live overlay hardware.
+- Pre-alpha. Public CI runs lint, type checks, unit tests (Python 3.12) and a package build (Python 3.11–3.13). It does not run multi-epoch Ultralytics training or validate live overlay hardware, capture cards, or the fullscreen presenter.
+- The fullscreen presenter is Windows-only (`Win32FullscreenPresenter`); the same live pipeline still runs on other hosts in overlay/alpha/green mode.
 - COCO `person` models are plumbing checks, not CS2-validated player models.
 - Session-split product training needs your labels (or EdgeSAM/prepare drafts) and whole-session train/val assignment. Random frame splits are rejected for product datasets.
 - Free-tier notebooks default to COCO-person bootstrap plus self-train on a small CS2-10k slice. EdgeSAM auto-label is opt-in (`USE_EDGESAM=True`) and pulls larger ONNX teachers.
@@ -147,8 +150,10 @@ ingest → prepare_data → label → validate → train → export → self_tra
 
 ```bash
 uv run cs2-vision download-model --list-models
-uv run cs2-vision download-model yolo11n-seg --output-dir artifacts
+uv run cs2-vision download-model yolo26n-seg --output-dir artifacts
 ```
+
+Listed models include `yolo26n-seg` / `yolo26s-seg` / `yolo26m-seg` (the default fine-tune base is `yolo26n-seg`) and `yolo11n-seg`. Paths below stay on the plumbing model for brevity; swap in a CS2-trained model for real work.
 
 ### Offline outline
 
@@ -176,6 +181,24 @@ uv run cs2-vision live \
 Windows: use borderless windowed CS2. macOS: grant Screen Recording if prompted.
 
 Overlay position: `--overlay-x`, `--overlay-y`, and `--overlay-monitor` (0 = auto). When unset, the overlay aligns to the captured screen region or selected monitor.
+
+### Second-device composite (capture card)
+
+The gaming machine runs nothing here: its HDMI output goes through a splitter into a capture card on a second Windows box, which segments, composites, and presents fullscreen.
+
+```bash
+uv run cs2-vision live \
+  --model artifacts/yolo26n-seg.onnx \
+  --manifest artifacts/yolo26n-seg.model.json \
+  --class-name player \
+  --source-type capture-device --input-device 0 \
+  --fourcc MJPG --width 1920 --height 1080 --fps 60 \
+  --output-mode overlay \
+  --output-stream shm:contours \
+  --max-capture-age-ms 40
+```
+
+Presenter geometry is 1:1 (never scaled); hardware, latency budget, and the presenter contract are in [docs/CONTOUR_PIPELINE.md](docs/CONTOUR_PIPELINE.md).
 
 ### Desktop GUI
 
@@ -316,12 +339,15 @@ Run these from `vision/` (the directory with `pyproject.toml`):
 ```bash
 uv sync --frozen --extra dev
 # code under src/
-uv run ruff check src/
-uv run ruff format src/
+uv run ruff check src/ tests/
+uv run ruff format src/ tests/
 uv run mypy --strict src/cs2_vision_access/
+uv run pytest tests/ -q
 ```
 
-CI lives at monorepo root: `.github/workflows/vision-ci.yml` (path filters on `vision/**`, `working-directory: vision`). On `main` push/PR it runs Python 3.11–3.13 ruff and mypy checks and a package build. No multi-epoch train and no live hardware in CI. See root `.github/` for workflows and issue/PR templates.
+CI lives at monorepo root: `.github/workflows/vision-ci.yml` (path filters on `vision/**`, `working-directory: vision`). On `main` push/PR it runs Python 3.11–3.13 ruff and mypy checks, pytest on 3.12, and a package build. No multi-epoch train and no live hardware in CI. See root `.github/` for workflows and issue/PR templates.
+
+`vision/tests/` is currently local-only: the root `.gitignore` ignores it, so a fresh clone has no `tests/` and `uv run pytest tests/` there errors. The suite still runs locally and in CI when the directory is present.
 
 Package metadata: `pyproject.toml`. Lockfile: `uv.lock`.
 
@@ -344,6 +370,9 @@ Promote ONNX + `.model.json` into a stable path under `artifacts/` for live/outl
 | Live import fails for train-only deps | Install `--extra train` only if using those modules |
 | ONNX missing | `download-model` or train export; confirm `--manifest` matches file |
 | Live no frames / black | Source type, monitor index, capture device index (`--list-devices`) |
+| Capture card drops frames / reconnects | `--fourcc MJPG` (or `YUY2`) at the card's native mode; reconnect backs off 1/2/4 s and drains stale buffers automatically |
+| Composite drifts behind live | Set `--max-capture-age-ms` (~40 at 1080p60) so late frames are dropped, not queued |
+| Presenter shows a size mismatch | Capture resolution must equal the monitor's native resolution; the presenter never scales |
 | Overlay not visible on Windows | Borderless windowed CS2; overlay backend Win32 layered window |
 | Overlay misaligned / wrong position | Auto-aligns to capture region; use `--overlay-monitor` (0 = auto) or `--overlay-x` / `--overlay-y` |
 | GUI won't start | Needs a display; on Linux the tkinter overlay falls back to window alpha |
@@ -360,13 +389,15 @@ Promote ONNX + `.model.json` into a stable path under `artifacts/` for live/outl
 - Model manifests bind ONNX files by SHA-256; prefer loading with matching manifests.
 - Zip extract paths reject `..` traversal in training cloud helpers.
 - Live mode is external capture only; follow platform and anti-cheat terms for your environment.
+- The shared-memory ring is local to one machine and has no authentication; any local process that guesses the name can read frames. Treat it as display data, not a secret channel.
+- Streamproof mode (`WDA_EXCLUDEFROMCAPTURE`) hides the presenter from device-2 captures; it does not change what the gaming machine can see.
 - CS2-10k and other third-party datasets carry their own licenses (for example CC BY-NC 4.0).
 
 ## Contribution guidance
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Monorepo meta (issues across tracks, root templates) is at the Periscope root. Short version for this track:
 
-1. Run ruff/mypy as in CI (from `vision/`).
+1. Run ruff/mypy/pytest as in CI (from `vision/`).
 2. Do not commit `data/*`, `artifacts/*` weights, or `vision/cs2-vision-config.json`.
 3. Prefer session-split datasets for product-oriented training experiments.
 4. Keep CLI and config examples consistent with `src/cs2_vision_access/interfaces/cli/parser.py`.
@@ -374,6 +405,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md). Monorepo meta (issues across tracks, roo
 ## Model selection notes
 
 - Instance segmentation polygons feed the outline renderer; pure boxes only support rectangular fallbacks (`ultralytics-detect`).
-- Ultralytics YOLO-seg nano models are the default plumbing and fine-tune path in CLI train and cloud helpers.
+- Ultralytics YOLO26-seg nano (`yolo26n-seg`) is the default fine-tune base in CLI train and cloud helpers; `yolo11n-seg` remains a small plumbing model.
 - RF-DETR-Seg is optional (`rfdetr` extra).
 - EdgeSAM is a teacher for labeling (Vombit boxes to masks), not the default real-time live backend.

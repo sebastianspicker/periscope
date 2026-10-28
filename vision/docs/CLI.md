@@ -10,7 +10,7 @@ uv run cs2-vision <command> --help
 
 Pre-alpha. Commands cover offline outline, live + GUI, dataset/label work, train / train-auto, bakeoff, eval, and study packs. Prefer `cs2-vision <cmd> --help` for the installed flag set.
 
-Related: [ARCHITECTURE.md](ARCHITECTURE.md) · [LIVE_MODE.md](LIVE_MODE.md) · [TRAIN_AUTO.md](TRAIN_AUTO.md) · [DATASET.md](DATASET.md) · [EVALUATION.md](EVALUATION.md) · [BAKEOFF.md](BAKEOFF.md) · [ACCESSIBILITY.md](ACCESSIBILITY.md) · [USER_STUDY.md](USER_STUDY.md) · [CONTRACTS.md](CONTRACTS.md) · [CUDA.md](CUDA.md)
+Related: [ARCHITECTURE.md](ARCHITECTURE.md) · [LIVE_MODE.md](LIVE_MODE.md) · [CONTOUR_PIPELINE.md](CONTOUR_PIPELINE.md) · [TRAIN_AUTO.md](TRAIN_AUTO.md) · [DATASET.md](DATASET.md) · [EVALUATION.md](EVALUATION.md) · [BAKEOFF.md](BAKEOFF.md) · [ACCESSIBILITY.md](ACCESSIBILITY.md) · [USER_STUDY.md](USER_STUDY.md) · [CONTRACTS.md](CONTRACTS.md) · [CUDA.md](CUDA.md)
 
 ## Command index
 
@@ -59,7 +59,7 @@ See [TRAIN_AUTO.md](TRAIN_AUTO.md).
 
 ```bash
 uv run cs2-vision download-model --list-models
-uv run cs2-vision download-model yolo11n-seg --output-dir artifacts
+uv run cs2-vision download-model yolo26n-seg --output-dir artifacts
 uv run cs2-vision download-model vombit-yolov10n-fp16 --output-dir artifacts
 uv run cs2-vision download-model edgesam-encoder --output-dir artifacts
 uv run cs2-vision download-model edgesam-decoder --output-dir artifacts
@@ -89,9 +89,22 @@ uv run cs2-vision live \
 
 When none are given, the overlay auto-aligns to the captured screen region or selected monitor.
 
-Second-device composite (HDMI into another machine, contour fullscreen there): [CONTOUR_PIPELINE.md](CONTOUR_PIPELINE.md). Flags: `--output-stream shm:<name>` (shared-memory ring sink), `--fourcc MJPG` (capture codec), `--max-capture-age-ms N` (latency bound).
+Second-device composite (HDMI into another machine, contour fullscreen there): [CONTOUR_PIPELINE.md](CONTOUR_PIPELINE.md). Flags: `--output-stream shm:<name>` (shared-memory ring sink), `--fourcc MJPG` (capture codec), `--max-capture-age-ms N` (latency bound). The fullscreen presenter itself is a library backend (`create_fullscreen_presenter`), not a live flag yet.
 
 `--segmenter-backend` defaults to `ultralytics-onnx`. Other backends: `ultralytics-detect`, `rfdetr`, `cs2-sam`, `yolov10`, `nanodet`. Temporal: `--temporal-enabled` (suppress-only); optional `--temporal-hold` / `--temporal-max-dropout`.
+
+Capture-device input and its hardening flags:
+
+```bash
+uv run cs2-vision live \
+  --input-device 0 --backend dshow --fourcc MJPG \
+  --width 1920 --height 1080 --fps 60 \
+  --max-capture-age-ms 40 \
+  --model artifacts/model.onnx --manifest artifacts/model.model.json \
+  --class-name player --output-mode overlay
+```
+
+`--output-stream shm:<name>` publishes rendered frames into a shared-memory ring for a second process instead of writing a file, so a presenter or compositor can consume them without filesystem traffic. Wire format and consumer helper live in `adapters/capture/sinks/shared.py`.
 
 ## gui
 

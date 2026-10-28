@@ -45,9 +45,10 @@ From `vision/`:
 
 ```bash
 uv sync --extra dev
-uv run ruff check src/
-uv run ruff format --check src/
+uv run ruff check src/ tests/
+uv run ruff format --check src/ tests/
 uv run mypy --strict src/cs2_vision_access/
+uv run pytest tests/ -q
 uv build
 ```
 
@@ -55,6 +56,10 @@ From the repository root, the same complete lane is
 `python3 scripts/verify.py vision-cpu`. Run
 `python3 scripts/verify.py architecture` after changing boundaries or moving
 code.
+
+`vision/tests/` and `radar/tests/` are listed in the root `.gitignore`, so a fresh
+clone has neither directory: `pytest tests/` errors in `vision/`, and radar CMake
+configure fails. Keep them locally until the ignore rules are revisited.
 
 Details: [`vision/CONTRIBUTING.md`](vision/CONTRIBUTING.md).
 

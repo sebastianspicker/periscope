@@ -3,25 +3,29 @@
 How `live_radar` decides what to read and what to show. The posture is the
 product decision that separates a "radar" from a "radar that gets noticed".
 
-Design rule: **the radar should be indistinguishable from the official in-game
-radar** unless you deliberately opt out. A radar that shows less than the HUD
+Design rule: **the radar should converge on the official in-game radar** rather
+than sit permanently above it. A radar that shows no more than the HUD
 manufactures no information advantage, so there is no behavioural tell to
 correlate — no pre-aiming at unspotted enemies, no reacting to a player nobody
-could see.
+could see. The default policy reaches that state on its own: it starts at full
+information and walks down to hud-echo as blue pressure rises.
 
 ## Intel modes
 
 | Mode | What it renders | Info advantage |
 |---|---|---|
-| `hud-echo` (default) | teammates always; enemies only while the team spotting mask covers them | ~zero |
+| `hud-echo` | teammates always; enemies only while the team spotting mask covers them | ~zero |
 | `full` | every enemy including unspotted ones | real, and visible in your play |
+
+`hud-echo` is the floor, not the startup mode: the `auto` policy begins at
+`full` and the ladder drops to `hud-echo` from level 1 on. Pin `hud-echo` with
+`--strict-intel` if you want the zero-residual posture from the first frame.
 
 `hud-echo` reads `EntitySpottedState_t::m_bSpotted`, which is the same bit the
 game's own radar consumes. That is why the residual is zero rather than merely
 small.
 
 ### Policy vs. mode
-
 The mode is not chosen directly. You choose a **policy**:
 
 | Policy | Behaviour |
@@ -31,7 +35,9 @@ The mode is not chosen directly. You choose a **policy**:
 | `pinned-full` | always `full`; the ladder may still slow reads |
 
 A pinned policy is never silently overridden — that is the difference between
-"stealth by default" and "stealth whether or not you asked for it".
+"stealth by default" and "stealth whether or not you asked for it". Pinning the
+mode does not pin the read rate: a pinned `full` posture still honours every
+ladder cap, so `far_hz` can go to zero under risk.
 
 Controls: `--full` starts pinned to `full`, `--strict-intel` starts pinned to
 `hud-echo`. The `I` key cycles `auto` → `pinned-hud-echo` → `pinned-full` →
@@ -46,8 +52,11 @@ either:
   enemy can leak through `hud-echo`; or
 - **fail closed** (assume not spotted) — the radar hides a player it could see.
 
-`--strict-intel` fails closed. The reader records `spotted_known`, so the choice
-is explicit rather than a default buried in a helper.
+`--strict-intel` fails closed. The reader records `spotted_known` (set to false
+by both the real reader and the live stack entity path when the byte cannot be
+read) and the blip filter consults it only in hud-echo, so the choice is
+explicit rather than a default buried in a helper. Without the flag the same
+failed read is fail-open: `spotted` stays true so the enemy still draws.
 
 ## Read shaping
 
@@ -96,7 +105,9 @@ Offsets come from a dump, not from pattern scanning at runtime, and the dump is
 pinned by date:
 
 - `data/cs2/*.json`, `adapters/real/cs2/offsets_snapshot.hpp` — generated `2026-10-27`
-- `src/simulation/cs2/{offsets,schema}.cpp` — mirrored to the same dump
+- `src/simulation/cs2/offsets.hpp` and `schema.cpp` — mirrored to the same dump
+
+Current pin: dump `2026-10-27T19:42:52Z`, game build 14192.
 
 Refresh with `python3 radar/scripts/update_cs2_signatures.py`, then rebuild. The
 generated header records the dump timestamp and build number; `--check` reports

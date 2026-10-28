@@ -80,21 +80,40 @@ cs2-vision live \
 ## The compositor / presenter
 
 ``Win32FullscreenPresenter`` (adapters/capture/presenter.py) opens a borderless
-topmost window sized to the target monitor and blits the composited frames at
-native resolution. Rules the geometry contract enforces:
+topmost layered window sized to the target monitor and blits the composited
+frames at native resolution. Rules the geometry contract enforces:
 
 1. **1:1 only.** The captured size must equal the presented size. A mismatch
    raises rather than scales — scaling blurs the game and smears the outlines.
-2. **Offsets, not scaling.** If the card's active area does not start at the
-   display's top-left, apply ``--present-offset-x/y``.
-3. **Cursor hidden.** The presenter hides the cursor over the window; there is
-   no visible chrome, no title bar, no diagnostics.
+2. **Offsets, not scaling.** ``PresentGeometry`` carries ``offset_x`` /
+   ``offset_y`` so a card whose active area does not start at the display's
+   top-left can be corrected without touching resolution.
+3. **No chrome, no focus theft.** ``WS_POPUP`` with ``WS_EX_NOACTIVATE``: no
+   title bar, no border, and the window does not pull focus from the game.
+   Inference diagnostics, pause badges and hotkey hints stay on the preview path.
 4. **Streamproof.** ``streamproof=True`` applies ``WDA_EXCLUDEFROMCAPTURE`` so
    any capture of device 2's output (game recording, screenshots) does not
    include the composite.
 
 Launch order: presenter first, then the pipeline. The presenter window comes up
 topmost and stays there; the compositor then blits into it.
+
+### Current wiring gaps
+
+The presenter is a library backend, not a CLI subcommand yet. ``presenter.py``,
+``presentation.py`` and the shared-memory sink are importable and covered by
+``tests/test_contour_pipeline.py``, but:
+
+- Nothing constructs the presenter for you — call
+  ``create_fullscreen_presenter(width, height, streamproof=...)`` from your own
+  compositor that reads ``shm:<name>`` with ``read_shared_frame``.
+- ``--present-offset-x`` / ``--present-offset-y`` do not exist as flags. The
+  geometry type accepts offsets; passing them through the CLI is manual.
+- ``--streamproof`` is likewise not a flag; it is a constructor argument.
+- The presenter hides no cursor: Windows keeps drawing its own pointer over the
+  layered window.
+- The presenter is Windows-only. Other hosts raise ``PresenterUnavailable`` and
+  should use ``--output-mode overlay`` on the gaming machine instead.
 
 ## Single-machine alternative
 

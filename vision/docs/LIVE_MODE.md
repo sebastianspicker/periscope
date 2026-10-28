@@ -18,11 +18,11 @@ Desktop alternative: `cs2-vision gui` — same engine, tkinter dashboard. See [C
 ## Quick start
 
 ```bash
-uv run cs2-vision download-model yolo11n-seg --output-dir artifacts
+uv run cs2-vision download-model yolo26n-seg --output-dir artifacts
 
 uv run cs2-vision live \
-  --model artifacts/yolo11n-seg.onnx \
-  --manifest artifacts/yolo11n-seg.model.json \
+  --model artifacts/yolo26n-seg.onnx \
+  --manifest artifacts/yolo26n-seg.model.json \
   --class-name person \
   --source-type screen \
   --output-mode alpha \
@@ -56,6 +56,7 @@ uv run cs2-vision live --config cs2-vision-config.json
 | `--output-stream` | Publish rendered frames to a shared-memory ring (`shm:<name>`) for a second process |
 | `--max-capture-age-ms` | Drop capture frames older than this many ms of capture time (0 = off) |
 | `--fourcc` | Capture codec hint (`MJPG`, `YUY2`) for capture cards |
+| `--backend` | OpenCV capture backend hint (`auto`, `dshow`, `avfoundation`, `v4l2`, `msmf`) |
 | `--overlay` | Transparent always-on-top overlay window |
 | `--overlay-x` / `--overlay-y` | Overlay window top-left (pixels) |
 | `--overlay-monitor` | Overlay monitor index (`0` = auto) |
@@ -120,6 +121,9 @@ Tkinter dashboard with Capture / Model / Style / Overlay-Output / Run tabs. Runs
 ## Operation notes
 
 - Frame skipping kicks in when inference is slower than capture so the UI stays interactive.
+- Capture reads reconnect with bounded backoff (1 s, 2 s, 4 s) and drain buffered frames after a successful reconnect; a card pulled and replugged mid-session recovers without a restart.
+- `--max-capture-age-ms` bounds latency by dropping frames that are already stale. Without it, a slow stage turns into an ever-growing queue.
+- `--output-stream shm:<name>` replaces (not adds to) any file `--output-sink`; it publishes the rendered frame into a 48-byte-header RGBA ring with newest-wins drops and torn-read detection. Consumers use `read_shared_frame`.
 - Alpha and green modes are for external compositors (e.g. OBS), not for writing into the game process.
 - Second-device composite (capture card + fullscreen presenter on another Windows box): [CONTOUR_PIPELINE.md](CONTOUR_PIPELINE.md).
 - Prefer a CS2-trained `player` model for product experiments; COCO `person` is a wiring check only.

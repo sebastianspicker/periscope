@@ -13,6 +13,11 @@ Two ways to run it:
 
 Default builds use `sim::World`. Real Windows backends are optional via CMake.
 
+`live_radar` prefers not to manufacture an information advantage: the default
+`auto` policy starts at full intel and lets the degrade ladder fall back to
+hud-echo (only what the in-game radar already shows) as blue pressure rises.
+Posture and its limits: [docs/STEALTH-POSTURE.md](docs/STEALTH-POSTURE.md).
+
 ---
 
 ## Why it exists
@@ -103,7 +108,7 @@ Runtime knobs: `LR_MODE=sim|real|hybrid`, `LR_VERBOSE=0|1`.
 LR_MODE=sim ./build/strategy_lab run 01_external_rpm
 ./build/strategy_lab all --quiet
 
-# Portable host tests
+# Portable host tests (needs the local, gitignored tests/ directory)
 ctest --test-dir build --output-on-failure
 
 # Per-tier deterministic simulation demos
@@ -112,12 +117,23 @@ ctest --test-dir build --output-on-failure
 
 # Windows GPU control panel demo (requires LR_ENABLE_REAL_GPU=ON)
 ./build/gui_demo
+
+# Opt-in live CS2 radar (real RPM + syscall + GPU), auto posture by default
+./build/live_radar
+./build/live_radar --full          # pin full intel instead
 ```
 
 `gui_demo` is created only when the real RPM, syscall, and GPU capabilities
 are enabled. It uses simulated entities and does not require a game process.
 `INSERT` toggles its control panel; `END` / `ESC` quit. Settings land in
 `radar.ini` next to the binary.
+
+`live_radar` defaults to the `auto` policy: it starts at full intel and lets the
+degrade ladder drop to hud-echo when blue risk rises, never relaxing back past
+hud-echo on its own. `--full` pins all-entity intel, `--strict-intel` pins
+hud-echo and fails closed on an unreadable spotted flag. `I` cycles the policy
+at runtime.
+Posture, read shaping, and the degrade ladder: [docs/STEALTH-POSTURE.md](docs/STEALTH-POSTURE.md).
 
 ---
 
@@ -132,7 +148,7 @@ are enabled. It uses simulated entities and does not require a game process.
 | [docs/THREAT-TIERS.md](docs/THREAT-TIERS.md) | T0–T4 delivery detail |
 | [docs/STRATEGY-CATALOG.md](docs/STRATEGY-CATALOG.md) | Human index of strategy pairs |
 | [docs/CURRICULUM.md](docs/CURRICULUM.md) | Suggested learning order |
-| [docs/STEALTH-POSTURE.md](docs/STEALTH-POSTURE.md) | Intel modes, read shaping, degrade ladder |
+| [docs/STEALTH-POSTURE.md](docs/STEALTH-POSTURE.md) | Intel policy, read shaping, degrade ladder, offset pinning |
 
 Live catalog truth is always `./build/strategy_lab list` (hundreds of registered pairs under `scenarios/strategies/`).
 

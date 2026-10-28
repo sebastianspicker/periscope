@@ -10,10 +10,10 @@ The primary vision topology is:
                                                         |
                                               fullscreen present
 
-Device 2 opens a borderless, cursor-less, topmost window sized exactly to the
-monitor the player looks at, and blits the composited frame at native
-resolution. Because the pixels shown are the pixels captured, alignment is a
-solved problem: nothing is scaled, nothing is moved.
+Device 2 opens a borderless, chrome-less, topmost, non-activating window sized
+exactly to the monitor the player looks at, and blits the composited frame at
+native resolution. Because the pixels shown are the pixels captured, alignment
+is a solved problem: nothing is scaled, nothing is moved.
 
 Only the composited output ever reaches this window — inference diagnostics,
 pause badges and hotkey hints stay on the preview path. On Windows the window
@@ -22,7 +22,7 @@ recording or stream of the gaming PC never shows the outline even when the
 overlay runs on the same machine.
 
 The pure geometry lives here so tests can drive it without a display; the
-ctypes/Win32 specifics live in the win32 overlay backend.
+ctypes/Win32 specifics live in ``presenter.py``.
 """
 
 from __future__ import annotations

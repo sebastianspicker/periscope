@@ -16,8 +16,10 @@
 
 **vision** (from `vision/`):
 
-- [ ] `uv run ruff check src/`
+- [ ] `uv run ruff check src/ tests/`
+- [ ] `uv run ruff format --check src/ tests/`
 - [ ] `uv run mypy --strict src/cs2_vision_access/`
+- [ ] `uv run pytest tests/ -q`
 - [ ] `uv build`
 - [ ] Extra checks if relevant (live, GPU, train path, notebook regen)
 

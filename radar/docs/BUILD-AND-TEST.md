@@ -41,8 +41,18 @@ ctest --test-dir build --output-on-failure   # portable host tests
 ```
 
 `ctest` covers host-only logic that links no real adapter (currently the intel
-and read-shaping posture policy in `tests/stack_posture_test.cpp`). It runs with
-the default simulation configuration on every platform.
+policy and read-shaping posture in `tests/stack_posture_test.cpp`: burst bounds,
+floor restore, ladder-survives-shaper, pin immunity, relaxation cadence). It runs
+with the default simulation configuration on every platform.
+
+`tests/` is listed in the root `.gitignore`, so a fresh clone has no test
+directory and CMake configure fails at `add_subdirectory(tests)`. Keep the
+directory present locally (it is needed by `enable_testing()`), or drop the
+ignore rule before relying on a clean-clone build.
+
+Strategy lesson sources are tracked even though `build_*/` is ignored — the
+`crosscutting/build_watermark/` pair has a narrow `.gitignore` exception because
+its directory name matches the broad build rule.
 
 ## Common Binaries
 
@@ -52,6 +62,10 @@ the default simulation configuration on every platform.
 | `fps_demo` | `apps/demos/fps_demo.cpp` | FPS game state demo |
 | `radar_t0` … `radar_t4` | `apps/demos/radar_t{0-4}.cpp` | Per-tier deterministic simulation demos |
 | `live_radar` | `apps/demos/live_radar.cpp` | Opt-in live CS2 radar overlay (real RPM + syscall + GPU) |
+
+`live_radar` takes `--full` (pin all-entity intel) and `--strict-intel` (pin
+hud-echo, fail closed). Policy, shaping, and the degrade ladder:
+[STEALTH-POSTURE.md](STEALTH-POSTURE.md).
 | `tier_comparison` | `apps/demos/tier_comparison.cpp` | All-tier timing comparison |
 | `full_prototype` | `apps/demos/full_prototype.cpp` | Opt-in real-backend exercise |
 | `duel_t0` … `duel_t4` | `apps/demos/duel_t{0-4}.cpp` | Red-vs-blue duels |

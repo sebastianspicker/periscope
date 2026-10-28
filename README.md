@@ -10,7 +10,7 @@ runtime code.
 | Path | Stack | License | Purpose |
 |------|-------|---------|---------|
 | [`radar/`](radar/) | C++20, CMake | MIT | Educational red/blue lab: T0–T4 external radar scars and counters (sim + optional Windows real backends) |
-| [`vision/`](vision/) | Python 3.11–3.13, `uv` | AGPL-3.0-only | Pre-alpha package `cs2-vision-access` (CLI `cs2-vision`): outline visible players from screen/video pixels only |
+| [`vision/`](vision/) | Python 3.11–3.13, `uv` | AGPL-3.0-only | Pre-alpha package `cs2-vision-access` (CLI `cs2-vision`): outline visible players from screen/video pixels only, including a second-device HDMI capture topology |
 
 ## Quick start
 
@@ -58,7 +58,7 @@ python3 scripts/verify.py all
 
 Both tracks are research / teaching / accessibility scaffolding.
 
-- **vision** never opens the game process, reads game memory, or injects input. Capture is external pixels (screen, capture device, or local video).
+- **vision** never opens the game process, reads game memory, or injects input. Capture is external pixels (screen, capture device, or local video). The primary live topology puts capture, inference, and the composite on a second machine fed by HDMI, so the gaming PC runs nothing extra — see [`vision/docs/CONTOUR_PIPELINE.md`](vision/docs/CONTOUR_PIPELINE.md).
 - **radar** real mode is lab/read-oriented educational scaffolding (process attach, optional kernel/DMA paths under opt-in flags). Default CMake config is simulation. High-risk paths (sample vulnerable driver, DMA firmware examples, elevated real backends) are lab-only — see [`radar/SECURITY.md`](radar/SECURITY.md).
 
 Operators own compliance with platform terms, anti-cheat policy, and local law.
@@ -73,6 +73,7 @@ Operators own compliance with platform terms, anti-cheat policy, and local law.
 | [NOTICE.md](NOTICE.md) | Dual licensing |
 | [radar/README.md](radar/README.md) · [radar/docs/INDEX.md](radar/docs/INDEX.md) | Radar curriculum and build |
 | [vision/README.md](vision/README.md) · [vision/docs/](vision/docs/) | Vision install, CLI, architecture |
+| [vision/docs/CONTOUR_PIPELINE.md](vision/docs/CONTOUR_PIPELINE.md) | Second-device contour composite (HDMI capture card) |
 | [radar/CONTRIBUTING.md](radar/CONTRIBUTING.md) · [vision/CONTRIBUTING.md](vision/CONTRIBUTING.md) | Per-project contribution detail |
 | [radar/SECURITY.md](radar/SECURITY.md) · [vision/SECURITY.md](vision/SECURITY.md) | Per-project security notes |
 

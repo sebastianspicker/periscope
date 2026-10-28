@@ -5,8 +5,9 @@ PC's HDMI output is captured, segmented, and composited, and the result is
 shown fullscreen. This module wraps that presentation surface.
 
 ``Win32FullscreenPresenter`` is the real backend: borderless popup window,
-per-pixel alpha via ``UpdateLayeredWindow``, topmost, cursor hidden over the
-window, optional capture exclusion (streamproof). The pure geometry checks —
+per-pixel alpha via ``UpdateLayeredWindow``, topmost, non-activating, optional
+capture exclusion (streamproof). It never touches the cursor; Windows keeps
+drawing its own pointer over the window. The pure geometry checks —
 native-resolution blitting, capture/present size agreement — live in
 ``resolve_present_size`` so they can be tested without a display.
 """

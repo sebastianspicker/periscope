@@ -31,7 +31,10 @@ default simulation dependency graph and remain explicit build/runtime opt-ins.
 Vision is a Python package for visible-pixel accessibility research. Frames
 enter from local video, capture devices, or screen capture. A selected model
 produces masks, optional temporal policy suppresses unstable detections, and a
-renderer sends the result to a file, display, or separate overlay window.
+renderer sends the result to a file, display, separate overlay window, or a
+shared-memory ring. In the primary deployment (`vision/docs/CONTOUR_PIPELINE.md`)
+the whole pipeline runs on a second Windows machine against HDMI capture and
+presents 1:1 fullscreen, so no overlay window exists on the gaming machine.
 
 Dependency direction:
 
@@ -49,6 +52,11 @@ platform integrations are adapters. A vertical batch workflow may localize a
 one-off filesystem or OpenCV operation when introducing a port would add no
 useful substitution or test seam; those effects must not leak into the domain
 or application core.
+
+Capture and presentation split the same way: the 1:1 present geometry is a pure
+domain-adjacent contract, the Win32 window and the shared-memory ring are
+adapters. Capture reconnect/backoff and the stale-frame bound live in the capture
+adapter, never in the live pipeline loop.
 
 ## External contracts
 
